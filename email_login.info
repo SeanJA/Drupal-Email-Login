@@ -1,0 +1,3 @@
+name = Email Login
+description = Allow users to login using their emails as well as their usernames
+core = 6.x
