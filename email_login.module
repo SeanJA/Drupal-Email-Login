@@ -53,7 +53,6 @@ function email_login_user_login_validate($form, &$form_state) {
 }
 
 function _email_login_user_register_form_alter(&$form, $form_state, $form_id) {
-  var_export($form['name']);
   unset($form['name']);
   array_unshift($form['#validate'], 'email_login_user_register_validate');
 }
@@ -63,7 +62,6 @@ function _email_login_user_register_form_alter(&$form, $form_state, $form_id) {
  * if a username already exists append _[0-9]+ to it
  */
 function email_login_user_register_validate(&$form, &$form_state) {
-  echo '<pre>',var_dump($form_state['values'], 1),'</pre>';
   $email = $form_state['values']['mail'];
   if($email){
     $t = explode('@',$email);
@@ -74,7 +72,5 @@ function email_login_user_register_validate(&$form, &$form_state) {
     //$form_state
     $name = $name . '_' . $count;
     $form_state['values']['name'] = $name;
-    var_dump($name);
   }
-  $form['name'] = array ( '#type' => 'textfield', '#title' => 'Username', '#default_value' => NULL, '#maxlength' => 60, '#description' => 'Spaces are allowed; punctuation is not allowed except for periods, hyphens, and underscores.', '#required' => true, );
 }
