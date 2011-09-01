@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Capture the form stubmit and check the form_id if it matches a login form, then
  * it will check it as an email using an extra validation step
@@ -12,16 +13,24 @@ function email_login_form_alter(&$form, $form_state, $form_id) {
     //there are two normal login forms
     case 'user_login':
     case 'user_login_block':
-      // Ensure a valid validate array.
-      $form['#validate'] = is_array($form['#validate']) ? $form['#validate'] : array();
-      // your validation function must run first.
-      array_unshift($form['#validate'],'email_login_user_login_validate');
+      _email_login_user_login_form_alter($form, $form_state, $form_id);
+      
+      break;
+    case 'user_register':
+      _email_login_user_register_form_alter($form, $form_state, $form_id);
       break;
     //ignore other stuff
     default:
       return;
       break;
   }
+}
+
+function _email_login_user_login_form_alter(&$form, $form_state, $form_id){
+  // Ensure a valid validate array.
+  $form['#validate'] = is_array($form['#validate']) ? $form['#validate'] : array();
+  // your validation function must run first.
+  array_unshift($form['#validate'], 'email_login_user_login_validate');
 }
 
 /**
@@ -32,13 +41,40 @@ function email_login_form_alter(&$form, $form_state, $form_id) {
  */
 function email_login_user_login_validate($form, &$form_state) {
   if (isset($form_state['values']['name']) && strpos($form_state['values']['name'], '@') !== false) {
-    if(module_exists('multiple_email')){
-        $name = db_result(db_query("SELECT users.name FROM {users} JOIN multiple_email ON multiple_email.uid = users.uid WHERE (LOWER(multiple_email.email) = LOWER('%s') AND multiple_email.confirmed = TRUE) OR LOWER(users.mail) = LOWER('%s')", $form_state['values']['name'], $form_state['values']['name']));
+    if (module_exists('multiple_email')) {
+      $name = db_result(db_query("SELECT users.name FROM {users} JOIN multiple_email ON multiple_email.uid = users.uid WHERE (LOWER(multiple_email.email) = LOWER('%s') AND multiple_email.confirmed = TRUE) OR LOWER(users.mail) = LOWER('%s')", $form_state['values']['name'], $form_state['values']['name']));
     } else {
-        $name = db_result(db_query("SELECT name FROM {users} WHERE LOWER(mail) = LOWER('%s')", $form_state['values']['name']));
+      $name = db_result(db_query("SELECT name FROM {users} WHERE LOWER(mail) = LOWER('%s')", $form_state['values']['name']));
     }
     if ($name) {
       form_set_value($form['name'], $name, $form_state);
     }
   }
+}
+
+function _email_login_user_register_form_alter(&$form, $form_state, $form_id) {
+  var_export($form['name']);
+  unset($form['name']);
+  array_unshift($form['#validate'], 'email_login_user_register_validate');
+}
+
+/**
+ * Take the email address and get a username
+ * if a username already exists append _[0-9]+ to it
+ */
+function email_login_user_register_validate(&$form, &$form_state) {
+  echo '<pre>',var_dump($form_state['values'], 1),'</pre>';
+  $email = $form_state['values']['mail'];
+  if($email){
+    $t = explode('@',$email);
+    $name = reset($t);
+    $search = $name .'%';
+    unset($t);
+    $count = db_result(db_query("SELECT COUNT(name) FROM {users} WHERE LOWER(name) LIKE LOWER('%s')", $search));
+    //$form_state
+    $name = $name . '_' . $count;
+    $form_state['values']['name'] = $name;
+    var_dump($name);
+  }
+  $form['name'] = array ( '#type' => 'textfield', '#title' => 'Username', '#default_value' => NULL, '#maxlength' => 60, '#description' => 'Spaces are allowed; punctuation is not allowed except for periods, hyphens, and underscores.', '#required' => true, );
 }
