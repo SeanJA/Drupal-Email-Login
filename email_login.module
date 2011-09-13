@@ -70,7 +70,9 @@ function email_login_user_register_validate(&$form, &$form_state) {
     unset($t);
     $count = db_result(db_query("SELECT COUNT(name) FROM {users} WHERE LOWER(name) LIKE LOWER('%s')", $search));
     //$form_state
-    $name = $name . '_' . $count;
+    if($count > 0){
+      $name = $name. '_' . $count;
+    }
     $form_state['values']['name'] = $name;
   }
 }
